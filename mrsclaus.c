@@ -9,7 +9,7 @@
 #define MAXELF 25
 #define PERCENTERROR 20
 #define MAXELFWAIT 3
-#define ITERS 4
+#define ITERS 1
 
 typedef struct{
 int deerID;
@@ -21,7 +21,8 @@ int elfID;
 
 int deercount;
 int elfWait;
-sem_t deerSem, lastDeer, hohoho, end, elfdone, frontDesk, fullDesk;
+sem_t deerSem, lastDeer, hohoho, end, frontDesk, fullDesk;
+pthread_t  thread[THREAD_COUNT];
 
 void *santa( void *);
 void *deer( void *);
@@ -41,7 +42,7 @@ void main(int argc , char *argv[] )
 	int i;
 	
 
-	pthread_t  thread[THREAD_COUNT];
+
 	deer_params params[MAXDEER];
 	elf_params elfparams[MAXELF];
 
@@ -56,7 +57,6 @@ void main(int argc , char *argv[] )
 	sem_init(&frontDesk, 0,1);
 	sem_init(&fullDesk, 0,0);
 
-	sem_init(&elfdone,0,-25);
 
 	if(pthread_create(&thread[0],NULL, santa, NULL)){
 		perror("Santa Failed to Create: \n");
@@ -83,7 +83,7 @@ void main(int argc , char *argv[] )
 
 
 
-	for(i = 0; i < THREAD_COUNT; i++){
+	for(i = 0; i < THREAD_COUNT - MAXELF; i++){
 		pthread_join(thread[i], NULL);
 	}
 	thanks();
@@ -93,13 +93,14 @@ void main(int argc , char *argv[] )
 void *santa(void *ptr)
 {
 	int i;
-	printf("Santa >>> going to sleep until woken by Reindeer or Elves!\n");
-	for(i = 0; i < MAXELF; i++){
-	sem_wait(&elfdone);
-	}
-	//wait for last deer or elf
+	printf("Santa    >>> going to sleep for a while!\n");
 
 	sem_wait(&lastDeer);
+	printf("Santa    >>> I woke up!\n");
+	printf("Santa    >>> Done with the Elves!\n");
+	for(i = MAXDEER + 1; i < THREAD_COUNT; i++){
+		pthread_cancel(thread[i]);
+	}
 	
 	harness();
 	shout();
@@ -198,6 +199,7 @@ void *elf(void *ptr)
 				}
 				printf("     >>>Office at full capacity!<<<\n");
 				printf("Elf %d     >>> waking up Santa!\n", id);
+
 				elfWait = 0;
 				//sem_post(&frontDesk);
 			}
@@ -220,7 +222,6 @@ void *elf(void *ptr)
 	}
 	printf("Elf %d     >>> Terminated!\n", id);
 	
-	sem_post(&elfdone);
 	if(id == 11 || id == 23 || id == 5){
 		sleep(9);
 		if(elfWait > 0){
@@ -235,7 +236,7 @@ void *elf(void *ptr)
 }
 
 void harness(){
-	printf("Santa >>> Harnessing all reindeer!\n");
+	printf("Santa   >>> Harnessing all reindeer!\n");
 	sleep(rand() % 4 + 1);
 }
 
@@ -253,19 +254,18 @@ void travelToNorthPole(int id)
 
 void shout()
 {
-	printf("Santa >>> Ho Ho Ho Let's Distribute Toys!!!\n");
+	printf("Santa    >>> Ho Ho Ho Let's Distribute Toys!!!\n");
 }
 
 void deliverPresents(){
-	printf("Santa >>> Flying the sleigh!\n");
+	printf("Santa    >>> Flying the sleigh!\n");
         sleep(rand() % 4 + 1);
-        printf("Santa >>> Finished delivering presents >>> Flying back to North Pole!\n");
+        printf("Santa    >>> Finished delivering presents >>> Flying back to North Pole!\n");
 
 }
 
 void thanks(){
-	printf("Santa >>> Thanks for all your help Reindeer and elves!!!\n");
+	printf("Santa    >>> Thanks for all your help Reindeer and elves!!!\n");
 	printf("---------------------------------------------------------------------------------------------------\n");
 }
-
 
